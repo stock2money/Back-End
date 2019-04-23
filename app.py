@@ -5,11 +5,10 @@ import requests
 app = Flask(__name__)
 
 # 配置数据库的地址
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://root:2craWbasil@localhost:3306/mydb'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://root:password@localhost:3306/mydb'
 # 跟踪数据库的修改，不建议开启
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 db = SQLAlchemy(app)
-
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -22,13 +21,18 @@ db.create_all()
 
 @app.route('/api/login', methods=['POST'])
 def login():
-    code = request.get('code')
-    res = requests.post('https://api.weixin.qq.com/sns/jscode2session?appid=APPID&secret=SECRET&js_code=JSCODE&grant_type=authorization_code', data={
-        "js_code": code,
-        "grant_type": "authorization_code",
-        "appid": "wx25915d3c4f6a78f3",
-        "secret": "133e74afeca06c60a597cf3b694a6c87"})
-
+    code = request.form.to_dict()['code']
+    res_wechat = requests.get("https://api.weixin.qq.com/sns/jscode2session?appid=wx25915d3c4f6a78f3&secret=133e74afeca06c60a597cf3b694a6c87&js_code="+code+ "&grant_type=authorization_code").json()
+    res_jqdata = requests.post("https://dataapi.joinquant.com/apis", data=json.dumps({
+        "method": "get_token",
+        "mob": "15626401698",  # mob是申请JQData时所填写的手机号
+        "pwd": "401698",  # Password为聚宽官网登录密码，新申请用户默认为手机号后6位
+    }))
+    res = {
+        "openid": res_wechat['openid'],
+        "token": res_jqdata.text
+    }
+    return json.dumps(res)
 
 @app.route('/api/add', methods=['POST'])
 def add_stock():
