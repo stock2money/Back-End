@@ -1,11 +1,11 @@
-from flask import Flask, request
+from flask import Flask, request, json
 from flask_sqlalchemy import SQLAlchemy
-import pandas._libs
+import requests
 
 app = Flask(__name__)
 
 # 配置数据库的地址
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://root:password@localhost:3306/mydb'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://root:2craWbasil@localhost:3306/mydb'
 # 跟踪数据库的修改，不建议开启
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 db = SQLAlchemy(app)
@@ -20,6 +20,15 @@ class User(db.Model):
 db.drop_all()
 db.create_all()
 
+@app.route('/api/login', methods=['POST'])
+def login():
+    code = request.get('code')
+    res = requests.post('https://api.weixin.qq.com/sns/jscode2session?appid=APPID&secret=SECRET&js_code=JSCODE&grant_type=authorization_code', data={
+        "js_code": code,
+        "grant_type": "authorization_code",
+        "appid": "wx25915d3c4f6a78f3",
+        "secret": "133e74afeca06c60a597cf3b694a6c87"})
+
 
 @app.route('/api/add', methods=['POST'])
 def add_stock():
@@ -33,7 +42,7 @@ def add_stock():
         db.session.add(query_result)
         db.session.commit()
     res['stocks'] = stocks
-    return pandas._libs.json.dumps(res, ensure_ascii=False)
+    return json.dumps(res, ensure_ascii=False)
 
 
 @app.route('/api/remove', methods=['POST'])
@@ -48,7 +57,7 @@ def remove_stock():
         db.session.add(query_result)
         db.session.commit()
     res['stocks'] = stocks
-    return pandas._libs.json.dumps(res, ensure_ascii=False)
+    return json.dumps(res, ensure_ascii=False)
 
 
 @app.route('/api/<username>', methods=['GET'])
@@ -61,7 +70,7 @@ def get_stocks(username):
         db.session.commit()
     else:
         res['stocks'] = get_stocks_list(query_result.stocks)
-    return pandas._libs.json.dumps(res, ensure_ascii=False)
+    return json.dumps(res, ensure_ascii=False)
 
 
 def get_stocks_list(stocks):
