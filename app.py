@@ -5,7 +5,12 @@ import requests
 app = Flask(__name__)
 
 # 配置数据库的地址
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://root:password@localhost:3306/mydb'
+# window 10
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://root:password@localhost:3306/mydb'
+
+# centos
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:password@localhost:3306/mydb'
+
 # 跟踪数据库的修改，不建议开启
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 db = SQLAlchemy(app)
@@ -15,9 +20,17 @@ class User(db.Model):
     id = db.Column(db.String(40), primary_key=True)
     stocks = db.Column(db.Text)
 
+class News(db.Model):
+    __tablename__ = 'news'
+    time = db.Column(db.String(30), primary_key=True)
+    title = db.Column(db.String(200), primary_key=True)
+    href = db.Column(db.String(100))
+    detail = db.Column(db.Text)
 
-db.drop_all()
-db.create_all()
+
+
+# db.drop_all()
+# db.create_all()
 
 @app.route('/api/login', methods=['POST'])
 def login():
@@ -63,6 +76,14 @@ def remove_stock():
     res['stocks'] = stocks
     return json.dumps(res, ensure_ascii=False)
 
+@app.route('/api/news', methods=['GET'])
+def get_news():
+    res = []
+    news = News.query.all()
+    for n in news:
+        model = {"time": n.time, "title": n.title, "detail": n.detail}
+        res.append(model)
+    return json.dumps(res, ensure_ascii=False)
 
 @app.route('/api/<username>', methods=['GET'])
 def get_stocks(username):
@@ -75,6 +96,7 @@ def get_stocks(username):
     else:
         res['stocks'] = get_stocks_list(query_result.stocks)
     return json.dumps(res, ensure_ascii=False)
+
 
 
 def get_stocks_list(stocks):
@@ -92,4 +114,4 @@ def get_stocks_str(stocks_list):
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host='0.0.0.0')
