@@ -6,10 +6,10 @@ app = Flask(__name__)
 
 # 配置数据库的地址
 # window 10
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://root:2craWbasil@localhost:3306/mydb'
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://root:password@localhost:3306/mydb'
 
 # centos
-# app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:password@localhost:3306/mydb'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:password@localhost:3306/mydb'
 
 # 跟踪数据库的修改，不建议开启
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
