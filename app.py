@@ -27,10 +27,15 @@ class News(db.Model):
     href = db.Column(db.String(100))
     detail = db.Column(db.Text)
 
+class Stock(db.Model):
+    __tablename__ = 'stock'
+    code = db.Column(db.String(30), primary_key=True)
+    name = db.Column(db.String(200))
+    display_name = db.Column(db.String(100))
+    type = db.Column(db.String(20))
 
-
-# db.drop_all()
-# db.create_all()
+db.drop_all()
+db.create_all()
 
 @app.route('/api/login', methods=['POST'])
 def login():
@@ -98,6 +103,36 @@ def get_stocks(username):
     return json.dumps(res, ensure_ascii=False)
 
 
+def get_all_stocks_info():
+
+    # 获取token
+    res_jqdata_token = requests.post("https://dataapi.joinquant.com/apis", data=json.dumps({
+        "method": "get_token",
+        "mob": "15626401698",  # mob是申请JQData时所填写的手机号
+        "pwd": "401698",  # Password为聚宽官网登录密码，新申请用户默认为手机号后6位
+    }))
+    token = res_jqdata_token.text
+
+    # 获取股票相关信息
+    res_jqdata_stocks = requests.post("https://dataapi.joinquant.com/apis", data=json.dumps({
+        "method": "get_all_securities",
+        "token": token,
+        "code": "stock",
+        "date": "2019-01-15"
+    }))
+    # 信息处理
+    stocks = res_jqdata_stocks.text.split('\n')
+    all_stock_info = []
+    for i, stock in enumerate(stocks):
+        if i >= 1:
+            info = stock.split(',')
+            stock_info = Stock(name=info[2], display_name=info[1], code=info[0], type=info[5])
+            all_stock_info.append(stock_info)
+    db.session.add_all(all_stock_info)
+    db.session.commit()
+
+get_all_stocks_info()
+
 
 def get_stocks_list(stocks):
     print(stocks)
@@ -112,6 +147,5 @@ def get_stocks_str(stocks_list):
         str += stock + ' '
     return str
 
-
 if __name__ == '__main__':
-    app.run(host='0.0.0.0')
+    app.run(host="0.0.0.0")
