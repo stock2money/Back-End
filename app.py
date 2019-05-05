@@ -34,8 +34,8 @@ class Stock(db.Model):
     display_name = db.Column(db.String(100))
     type = db.Column(db.String(20))
 
-db.drop_all()
-db.create_all()
+# db.drop_all()
+# db.create_all()
 
 @app.route('/api/login', methods=['POST'])
 def login():
@@ -147,7 +147,7 @@ def get_all_stocks_info():
     db.session.add_all(all_stock_info)
     db.session.commit()
 
-get_all_stocks_info()
+# get_all_stocks_info()
 
 
 def get_stocks_list(stocks):
