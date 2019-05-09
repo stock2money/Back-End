@@ -147,8 +147,8 @@ def remove_stock():
 # 获取新闻
 @app.route('/api/news', methods=['GET'])
 def get_news():
-    s = request.args.get('from')
-    e = request.args.get('to')
+    s = int(request.args.get('from'))
+    e = int(request.args.get('to'))
     res = {"from": s, "to": e, "data": [], "msg": ''}
     try:
         if(s >= 0 and e >= s):
