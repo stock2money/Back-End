@@ -15,6 +15,7 @@ app = Flask(__name__)
 
 # 跟踪数据库的修改，不建议开启
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
+
 db = SQLAlchemy(app)
 
 class User(db.Model):
@@ -107,17 +108,22 @@ def vip_check():
 # 添加自选股
 @app.route('/api/stocks/add', methods=['POST'])
 def add_stock():
+    res = {'userId': '', 'stocks': [], 'msg': ''}
     try:
-        info = request.json()
-        res = {'userId': info['userId'], 'stocks': [], 'msg': ''}
-        query_result = User.query.filter_by(id=info['userId']).first()
-        stocks = get_stocks_list(query_result.stocks)
-        if info['stock'] not in stocks:
-            stocks.append(info['stock'])
-            query_result.stocks = get_stocks_str(stocks)
-            db.session.add(query_result)
-            db.session.commit()
-        res['stocks'] = stocks
+        id = request.json['userId']
+        code = request.json['stockCode']
+        res['userId'] = id
+        query_result = User.query.filter_by(id=id).first()
+        if query_result == None:
+            res["msg"] = "No such a user"
+        else:
+            stocks = get_stocks_list(query_result.stocks)
+            if code not in stocks:
+                stocks.append(code)
+                query_result.stocks = get_stocks_str(stocks)
+                db.session.add(query_result)
+                db.session.commit()
+            res['stocks'] = stocks
     except BaseException as e:
         print(e)
         res["msg"] = "Incorrect parameter"
@@ -127,17 +133,21 @@ def add_stock():
 # 取消自选股
 @app.route('/api/stocks/remove', methods=['POST'])
 def remove_stock():
-    info = request.json()
-    res = {'userId': info['userId'], 'stocks': [], 'msg': ''}
+    res = {'userId': '', 'stocks': [], 'msg': ''}
     try:
-        query_result = User.query.filter_by(id=info['user']).first()
-        stocks = get_stocks_list(query_result.stocks)
-        if info['stock'] in stocks:
-            stocks.remove(info['stock'])
-            query_result.stocks = get_stocks_str(stocks)
-            db.session.add(query_result)
-            db.session.commit()
-        res['stocks'] = stocks
+        id = request.json['userId']
+        code = request.json['stockCode']
+        query_result = User.query.filter_by(id=id).first()
+        if query_result == None:
+            res["msg"] = "No such a user"
+        else:
+            stocks = get_stocks_list(query_result.stocks)
+            if code in stocks:
+                stocks.remove(code)
+                query_result.stocks = get_stocks_str(stocks)
+                db.session.add(query_result)
+                db.session.commit()
+            res['stocks'] = stocks
     except BaseException as e:
         print(e)
         res["msg"] = "Incorrect parameter"
@@ -158,7 +168,6 @@ def get_news():
                 model = {"time": n.time, "title": n.title, "detail": n.detail}
                 data.append(model)
             res["data"] = data
-            print(data)
     except BaseException as e:
         print(e)
         res["msg"] = "Incorrect parameter"
@@ -211,7 +220,6 @@ def get_all_stocks_info():
 
 
 def get_stocks_list(stocks):
-    print(stocks)
     if stocks is None:
         return []
     else:
