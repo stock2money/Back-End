@@ -52,7 +52,7 @@ def login():
 
     # 获取jq的token
     res_jqdata = requests.post("https://dataapi.joinquant.com/apis", data=json.dumps({
-        "method": "get_token",
+        "method": "get_current_token",
         "mob": "15626401698",  # mob是申请JQData时所填写的手机号
         "pwd": "401698",  # Password为聚宽官网登录密码，新申请用户默认为手机号后6位
     }))
