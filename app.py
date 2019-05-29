@@ -8,7 +8,7 @@ app = Flask(__name__)
 
 # 配置数据库的地址
 # window 10
-# app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://root:password@localhost:3306/mydb'
+# # app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://root:password@localhost:3306/mydb'
 
 # centos
 # app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:password@localhost:3306/mydb'
@@ -18,12 +18,14 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 
 db = SQLAlchemy(app)
 
+# 用户
 class User(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.String(40), primary_key=True)
     stocks = db.Column(db.Text)
     isVip = db.Column(db.Boolean, default=False)
 
+# 新闻
 class News(db.Model):
     __tablename__ = 'news'
     time = db.Column(db.String(30), primary_key=True)
@@ -31,6 +33,7 @@ class News(db.Model):
     href = db.Column(db.String(100))
     detail = db.Column(db.Text)
 
+# 股票信息
 class Stock(db.Model):
     __tablename__ = 'stock'
     code = db.Column(db.String(30), primary_key=True)
@@ -38,6 +41,26 @@ class Stock(db.Model):
     display_name = db.Column(db.String(100))
     type = db.Column(db.String(20))
 
+# 智能推荐股票
+class Recommend(db.Model):
+    __tablename__ = 'recommend'
+    last_close = db.Column(db.String(10))
+    today_open = db.Column(db.String(10))
+    last_price = db.Column(db.String(10))
+    change = db.Column(db.String(20))
+    change_rate = db.Column(db.String(20))
+    code = db.Column(db.String(20), primary_key=True)
+    date = db.Column(db.String(20))
+    name = db.Column(db.String(20))
+    strategy = db.Column(db.String(20), primary_key=True)
+
+# 策略
+class Strategy(db.Model):
+    __tablename__ = 'strategy'
+    strategy = db.Column(db.String(10), primary_key=True)
+    successRate = db.Column(db.Integer)
+    operation = db.Column(db.Text)
+    usage = db.Column(db.Text)
 
 # db.drop_all()
 # db.create_all()
@@ -84,13 +107,14 @@ def login():
 # vip校验
 @app.route('/api/user/vip', methods=['POST'])
 def vip_check():
-    info = request.json()
-    res = {'userId': info['userId'], 'status': False, 'msg': ''}
+    res = {'userId': '', 'status': False, 'msg': ''}
     try:
-        vipCode = info["vipCode"]
+        vipCode = request.json()["vipCode"]
+        userId = request.json()["userId"]
+        res["userId"] = userId
         if vipCode == "sysu":
             try:
-                query_result = User.query.filter_by(id=info['userId']).first()
+                query_result = User.query.filter_by(id=userId).first()
                 query_result.isVip = True
                 db.session.add(query_result)
                 db.session.commit()
@@ -99,6 +123,43 @@ def vip_check():
                 res["msg"] = "An unknown error occurred, please try again later"
         else:
             res["msg"] = "Vip code is invalid"
+    except BaseException as e:
+        print(e)
+        res["msg"] = "Incorrect parameter"
+    return json.dumps(res, ensure_ascii=False)
+
+
+# 获取智能选股的推荐股票
+@app.route('/api/stocks/recommend', methods=['POST'])
+def get_recommend():
+    res = {"data": {}, "msg": ''}
+    try:
+        userId = request.json["userId"]
+        # 判断是否为vip
+        query_result = User.query.filter_by(id=userId).first()
+        if query_result == None or query_result.isVip == False:
+            res["msg"] = "Only for VIP User"
+            return json.dumps(res, ensure_ascii=False)
+        strategys = Strategy.query.all()
+        for item in strategys:
+            res["data"][item.strategy] = {}
+            res["data"][item.strategy]["successRate"] = item.successRate
+            res["data"][item.strategy]["operation"] = item.operation
+            res["data"][item.strategy]["usage"] = item.usage
+            res["data"][item.strategy]["stocks"] = []
+            stocks = Recommend.query.filter_by(strategy=item.strategy).all()
+            for s in stocks:
+                stock = {}
+                stock["last_close"] = s.last_close
+                stock["today_open"] = s.today_open
+                stock["last_price"] = s.last_price
+                stock["change"] = s.change
+                stock["change_rate"] = s.change_rate
+                stock["code"] = s.code
+                stock["date"] = s.date
+                stock["name"] = s.name
+                stock["strategy"] = s.strategy
+                res["data"][item.strategy]["stocks"].append(stock)
     except BaseException as e:
         print(e)
         res["msg"] = "Incorrect parameter"
