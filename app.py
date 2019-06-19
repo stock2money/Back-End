@@ -232,7 +232,7 @@ def get_comments(stockCode):
     res = {"msg": '', "code": stockCode, "score": 0, "data": []}
     try:
         comments = Comment.query.filter_by(code=stockCode).order_by(db.desc(Comment.time)).limit(200)
-        i = 0
+        i = 1
         num = 20
         score = 0
         for comment in comments:
