@@ -62,6 +62,17 @@ class Strategy(db.Model):
     operation = db.Column(db.Text)
     usage = db.Column(db.Text)
 
+# 股票评论
+class Comment(db.Model):
+    __tablename__ = 'comment'
+    code = db.Column(db.String(20), primary_key=True)
+    time = db.Column(db.String(30))
+    title = db.Column(db.String(200), primary_key=True)
+    href = db.Column(db.String(100))
+    detail = db.Column(db.Text)
+    author = db.Column(db.String(50), primary_key=True)
+    emotion = db.Column(db.Integer)
+
 # db.drop_all()
 # db.create_all()
 
@@ -212,6 +223,30 @@ def remove_stock():
     except BaseException as e:
         print(e)
         res["msg"] = "Incorrect parameter"
+    return json.dumps(res, ensure_ascii=False)
+
+
+# 获取某个股票近日的评论
+@app.route('/api/stock/<stockCode>/comment', methods=['GET'])
+def get_comments(stockCode):
+    res = {"msg": '', "code": stockCode, "score": 0, "data": []}
+    try:
+        comments = Comment.query.filter_by(code=stockCode).order_by(db.desc(Comment.time)).limit(200)
+        i = 0
+        num = 20
+        score = 0
+        for comment in comments:
+            if i <= num:
+                res["data"].append({"title": comment.title, "time": comment.time, "detail": comment.detail, "author": comment.author, "emotion": comment.emotion}) 
+            if comment.emotion < 0:
+                score += 0.2 * comment.emotion
+            else:
+                score += 1.5 * comment.emotion
+            i += 1            
+        res["score"] = ((score + i / 2) % i) / i
+    except BaseException as e:
+        print(e)
+        res["msg"] = "no such a stock"
     return json.dumps(res, ensure_ascii=False)
 
 
