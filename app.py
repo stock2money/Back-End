@@ -119,9 +119,10 @@ def login():
 @app.route('/api/user/vip', methods=['POST'])
 def vip_check():
     res = {'userId': '', 'status': False, 'msg': ''}
+    print(request.json)
     try:
-        vipCode = request.json()["vipCode"]
-        userId = request.json()["userId"]
+        vipCode = request.json['vipCode']
+        userId = request.json['userId']
         res["userId"] = userId
         if vipCode == "sysu":
             try:
@@ -243,6 +244,41 @@ def get_comments(stockCode):
             else:
                 score += 1.5 * comment.emotion
             i += 1            
+        res["score"] = ((score + i / 2) % i) / i
+    except BaseException as e:
+        print(e)
+        res["msg"] = "no such a stock"
+    return json.dumps(res, ensure_ascii=False)
+
+# 获取某个股票近日的评论
+@app.route('/api/stock/<stockCode>/comment', methods=['POST'])
+def set_comments(stockCode):
+    res = {"msg": '', "code": stockCode, "score": 0, "data": []}
+    print(request.json)
+    try:
+        # 插入评论
+        user = request.json["userId"]
+        detail = request.json["detail"]
+
+        curTime = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
+        comment = Comment(code=stockCode, time=curTime, title=detail, detail=detail, href="./stock2money", author="wechat_ " + user, emotion=0)
+        db.session.add(comment)
+        db.session.commit()
+
+        # 读取评论
+        comments = Comment.query.filter_by(code=stockCode).order_by(db.desc(Comment.time)).limit(200)
+        i = 1
+        num = 20
+        score = 0
+        for comment in comments:
+            if i <= num:
+                res["data"].append({"title": comment.title, "time": comment.time,
+                                    "detail": comment.detail, "author": comment.author, "emotion": comment.emotion})
+            if comment.emotion < 0:
+                score += 0.2 * comment.emotion
+            elif comment.emotion > 0:
+                score += 1.5 * comment.emotion
+            i += 1
         res["score"] = ((score + i / 2) % i) / i
     except BaseException as e:
         print(e)
