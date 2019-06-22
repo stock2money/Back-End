@@ -72,7 +72,7 @@ class Comment(db.Model):
     detail = db.Column(db.Text)
     author = db.Column(db.String(50), primary_key=True)
     emotion = db.Column(db.Integer)
-    avatar = db.Column(db.Binary)
+    avatar = db.Column(db.String(50))
 
 # db.drop_all()
 # db.create_all()
