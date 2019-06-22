@@ -72,6 +72,7 @@ class Comment(db.Model):
     detail = db.Column(db.Text)
     author = db.Column(db.String(50), primary_key=True)
     emotion = db.Column(db.Integer)
+    avatar = db.Column(db.Binary)
 
 # db.drop_all()
 # db.create_all()
@@ -238,7 +239,7 @@ def get_comments(stockCode):
         score = 0
         for comment in comments:
             if i <= num:
-                res["data"].append({"title": comment.title, "time": comment.time, "detail": comment.detail, "author": comment.author, "emotion": comment.emotion}) 
+                res["data"].append({"title": comment.title, "time": comment.time, "detail": comment.detail, "author": comment.author, "emotion": comment.emotion, "avatar": comment.avatar}) 
             if comment.emotion < 0:
                 score += 0.2 * comment.emotion
             else:
@@ -259,9 +260,10 @@ def set_comments(stockCode):
         # 插入评论
         user = request.json["userId"]
         detail = request.json["detail"]
-
+        avatar = request.json["avatar"]
         curTime = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
-        comment = Comment(code=stockCode, time=curTime, title=detail, detail=detail, href="./stock2money", author="wechat_ " + user, emotion=0)
+
+        comment = Comment(code=stockCode, time=curTime, title=detail, detail=detail, href="./stock2money", author="wechat_ " + user, emotion=0, avatar=avatar)
         db.session.add(comment)
         db.session.commit()
 
